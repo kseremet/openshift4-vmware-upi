@@ -1,0 +1,56 @@
+- name: Generate network configuration of {{ node_role }}-{{ idx }} 
+  set_fact:
+    node_name: "{{ cluster_name }}-{{ node_role }}-{{ idx }}"
+    network_config: |
+      TYPE=Ethernet
+      BOOTPROTO=none
+      NAME=ens192
+      DEVICE=ens192
+      ONBOOT=yes
+      IPADDR={{ ip }}
+      PREFIX={{ cidr_prefix }}
+      GATEWAY={{ gateway }}
+      DOMAIN={{ install_config.baseDomain }}
+      DNS1={{ dns_server }}
+
+- name: Create virtual machine {{ node_name }}
+  vmware_guest:
+    hostname: "{{ install_config.platform.vsphere.vcenter }}"
+    username: "{{ install_config.platform.vsphere.username }}"
+    password: "{{ install_config.platform.vsphere.password }}"
+    validate_certs: no
+    datacenter: "{{install_config.platform.vsphere.datacenter}}"
+    folder: "/{{ cluster_name }}"
+    name: "{{ node_name }}"
+    state: poweredoff
+    template: "{{ rhcos_template }}"
+    hardware:
+      memory_mb: 16384
+      num_cpus: 4
+      num_cpu_cores_per_socket: 2
+  register: deploy
+
+- name: Configure vApp properties of {{ node_name }}
+  vmware_guest:
+    hostname: "{{ install_config.platform.vsphere.vcenter }}"
+    username: "{{ install_config.platform.vsphere.username }}"
+    password: "{{ install_config.platform.vsphere.password }}"
+    validate_certs: no
+    uuid: "{{ deploy.instance.hw_product_uuid }}"
+    state: present
+    vapp_properties:
+      - id: "guestinfo.ignition.config.data"
+        value: "{{ lookup('template', ignition_template ) | to_nice_json(indent=2) | b64encode }}"
+      - id: "guestinfo.ignition.config.data.encoding"
+        value: base64
+      - id: "disk.EnableUUID"
+        value: "TRUE"
+
+- name: Power ON {{ node_name }}
+  vmware_guest:
+    hostname: "{{ install_config.platform.vsphere.vcenter }}"
+    username: "{{ install_config.platform.vsphere.username }}"
+    password: "{{ install_config.platform.vsphere.password }}"
+    validate_certs: no
+    uuid: "{{ deploy.instance.hw_product_uuid }}"
+    state: poweredon
