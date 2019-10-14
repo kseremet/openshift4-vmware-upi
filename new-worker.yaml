@@ -9,17 +9,6 @@
     - set_fact:
         worker_ip_addresses: "{{ worker_ips.split(',') }}"
 
-    - name: Create a VM folder on vCenter for new OpenShift cluster
-      vcenter_folder:
-        hostname: "{{ install_config.platform.vsphere.vcenter }}"
-        username: "{{ install_config.platform.vsphere.username }}"
-        password: "{{ install_config.platform.vsphere.password }}"
-        validate_certs: no
-        datacenter: "{{install_config.platform.vsphere.datacenter}}"
-        folder_name: "{{ cluster_name }}"
-        folder_type: vm
-        state: present
-
     - name: Set node role to compute
       set_fact:
         node_role: compute

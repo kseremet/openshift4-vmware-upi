@@ -1,6 +1,6 @@
-- name: Generate network configuration of {{ node_role }}-{{ idx }} 
+- name: Generate network configuration of {{ node_role }}-{{ idx + offset | int }} 
   set_fact:
-    node_name: "{{ cluster_name }}-{{ node_role }}-{{ idx }}"
+    node_name: "{{ cluster_name }}-{{ node_role }}-{{ idx + offset | int }}"
     network_config: |
       TYPE=Ethernet
       BOOTPROTO=none
@@ -22,7 +22,7 @@
     datacenter: "{{install_config.platform.vsphere.datacenter}}"
     folder: "/{{ cluster_name }}"
     name: "{{ node_name }}"
-    state: poweredoff
+    state: present
     template: "{{ rhcos_template }}"
     hardware:
       memory_mb: 16384
