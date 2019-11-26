@@ -7,7 +7,6 @@
       NAME=ens192
       DEVICE=ens192
       ONBOOT=yes
-      NM_CONTROLLED=no
       IPADDR={{ ip }}
       PREFIX={{ cidr_prefix }}
       GATEWAY={{ gateway }}
@@ -47,6 +46,14 @@
         value: "{{ lookup('template', ignition_template ) | to_nice_json(indent=2) | b64encode }}"
       - id: "guestinfo.ignition.config.data.encoding"
         value: base64
+
+- name: Add new VM into Ansible inventory
+  add_host:
+    hostname: "{{ node_name }}"
+    groups: "{{ node_role }}"
+    ansible_host: "{{ ip }}"
+    ansible_user: core
+    vmware_uuid: "{{ deploy.instance.hw_product_uuid }}"
 
 - name: Power ON {{ node_name }}
   vmware_guest:

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+source $1
+
+if [ -z "$nodes" ]; then
+    printf '{"failed": true, "msg": "missing required arguments: nodes"}'
+    exit 1
+fi
+
+max_time=${max_time:-600} # Maximum run-time in seconds
+delay=${delay:-60} # Delay between retries in seconds
+retries=$((max_time / delay))
+
+changed="false"
+msg=""
+stdout=""
+
+until [ $retries -eq 0 ]
+do
+  number_of_ready_nodes=$(oc get nodes --no-headers | grep Ready | wc -l)
+  if [ $number_of_ready_nodes -eq $nodes ]; then
+    msg="All $nodes of nodes are Ready"
+    break
+  fi
+
+  pending_csr_requests=$(oc get csr --no-headers | grep Pending | wc -l)
+  if [ $pending_csr_requests -gt 0 ]; then
+    stdout="${stdout}\nThere are $pending_csr_requests pending csr requests. Approving them..."
+    oc get csr -ojson | jq -r '.items[] | select(.status == {} ) | .metadata.name' | xargs oc adm certificate approve
+    changed="true"
+  fi
+
+  sleep $delay
+  retries=$((retries - 1))
+done
+
+if [ $number_of_ready_nodes -eq $nodes ]; then
+  printf '{"changed": %s, "msg": "%s", "failed": 0, "ready_nodes": "%s", "stdout": "%s"}' "$changed" "$msg" "$number_of_ready_nodes" "$stdout"
+  exit 0
+else
+  msg="Not all of the nodes become ready in $max_time seconds."
+  printf '{"changed": %s, "msg": "%s", "failed": 1, "ready_nodes": "%s", "stdout": "%s"}' "$changed" "$msg" "$number_of_ready_nodes" "$stdout"
+  exit 1
+fi

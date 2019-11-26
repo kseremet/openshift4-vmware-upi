@@ -4,11 +4,6 @@
   vars:
     install_config: "{{ lookup('file', install_config_file) | from_yaml }}"
     cluster_name: "{{ install_config.metadata.name }}"
-    master_ign_file: "{{ cluster_name }}/master.ign"
-    worker_ign_file: "{{ cluster_name }}/worker.ign"
-    bootstrap_ign_file: "{{ cluster_name }}/bootstrap.ign"
-    http_document_root: /var/www/html/ignitions
-    bootstrap_ignition_config_url: "http://{{ httpd_ip }}/ignitions/{{cluster_name}}_bootstrap.ign"
   tasks:
     - name: Create new cluster's directory
       file:
@@ -23,6 +18,46 @@
     - name: Create ignition configs of new cluster
       command: openshift-install create ignition-configs --dir={{ cluster_name }}
 
+    - name: Adding httpd server into Ansible's run-time inventory
+      add_host:
+        name: httpd
+        groups: httpservers
+        ansible_host: "{{ httpd_ip }}"
+        ansible_user: root
+
+- name: Prepare HTTP server
+  hosts: httpservers
+  gather_facts: no
+  vars:
+    install_config: "{{ lookup('file', install_config_file) | from_yaml }}"
+    cluster_name: "{{ install_config.metadata.name }}"
+    bootstrap_ign_file: "{{ cluster_name }}/bootstrap.ign"
+    http_document_root: /var/www/html/ignitions
+    bootstrap_ignition_config_url: "http://{{ httpd_ip }}/ignitions/{{cluster_name}}_bootstrap.ign"
+  tasks: 
+  - name: Copy bootstrap ignition file to http server
+    copy:
+      src: "{{ bootstrap_ign_file }}"
+      dest: "{{ http_document_root }}/{{cluster_name}}_bootstrap.ign"
+  
+  - name: Check that http server is serving bootstrap ignition file
+    uri:
+      url: "{{ bootstrap_ignition_config_url }}"
+      return_content: no
+      status_code: 200
+
+- hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    install_config: "{{ lookup('file', install_config_file) | from_yaml }}"
+    cluster_name: "{{ install_config.metadata.name }}"
+    master_ign_file: "{{ cluster_name }}/master.ign"
+    worker_ign_file: "{{ cluster_name }}/worker.ign"
+    bootstrap_ign_file: "{{ cluster_name }}/bootstrap.ign"
+    kubeconfig: "{{ cluster_name }}/auth/kubeconfig"
+    bootstrap_ignition_config_url: "http://{{ httpd_ip }}/ignitions/{{cluster_name}}_bootstrap.ign"
+  tasks:
     - set_fact:
         master_ip_addresses: "{{ master_ips.split(',') }}"
         worker_ip_addresses: "{{ worker_ips.split(',') }}"
@@ -38,6 +73,18 @@
         folder_name: "{{ cluster_name }}"
         folder_type: vm
         state: present
+
+    - name: Set node role to bootstrap
+      set_fact:
+        node_role: bootstrap
+        ignition_template: append-bootstrap.ign
+
+    - name: Create bootstrap VM
+      include_tasks: nodes.yaml
+      with_items: "{{ bootstrap_ip_addresses }}"
+      loop_control:
+        loop_var: ip
+        index_var: idx
 
     - name: Set node role to control-plane
       set_fact:
@@ -71,43 +118,69 @@
         loop_var: ip
         index_var: idx
 
-    - name: Set node role to bootstrap
-      set_fact:
-        node_role: bootstrap
-        ignition_template: append-bootstrap.ign
+- name: Wait for bootstrapping to start
+  hosts: bootstrap
+  gather_facts: false
+  tasks:
+  - name: Wait for bootstrap machine to be reachable over network
+    wait_for_connection:
+      delay: 60
+      timeout: 300
 
-    - name: Create bootstrap VM
-      include_tasks: nodes.yaml
-      with_items: "{{ bootstrap_ip_addresses }}"
-      loop_control:
-        loop_var: ip
-        index_var: idx
-
-    - name: Adding httpd server into Ansible's run-time inventory
-      add_host:
-        name: httpd
-        groups: httpservers
-        ansible_host: "{{ httpd_ip }}"
-        ansible_user: root
-
-- name: Prepare HTTP server
-  hosts: httpservers
-  gather_facts: no
+- name: Wait for OpenShift installation to complete
+  hosts: localhost
+  connection: local
+  gather_facts: false
   vars:
     install_config: "{{ lookup('file', install_config_file) | from_yaml }}"
     cluster_name: "{{ install_config.metadata.name }}"
-    bootstrap_ign_file: "{{ cluster_name }}/bootstrap.ign"
-    http_document_root: /var/www/html/ignitions
-    bootstrap_ignition_config_url: "http://{{ httpd_ip }}/ignitions/{{cluster_name}}_bootstrap.ign"
-  tasks: 
-  - name: Copy bootstrap ignition file to http server
-    copy:
-      src: "{{ bootstrap_ign_file }}"
-      dest: "{{ http_document_root }}/{{cluster_name}}_bootstrap.ign"
-  
-  - name: Check that http server is serving bootstrap ignition file
-    uri:
-      url: "{{ bootstrap_ignition_config_url }}"
-      return_content: no
-      status_code: 200
+  environment:
+    KUBECONFIG: "{{ cluster_name }}/auth/kubeconfig"
+  tasks:
+  - set_fact:
+      master_ip_addresses: "{{ master_ips.split(',') }}"
+      worker_ip_addresses: "{{ worker_ips.split(',') }}"
 
+  - name: Wait for bootstrap complete
+    command: openshift-install --dir={{ cluster_name }} wait-for bootstrap-complete
+    register: result
+
+  - debug: var=result
+
+  - name: Remove bootstrap vm
+    vmware_guest:
+      hostname: "{{ install_config.platform.vsphere.vcenter }}"
+      username: "{{ install_config.platform.vsphere.username }}"
+      password: "{{ install_config.platform.vsphere.password }}"
+      validate_certs: no
+      uuid: "{{ hostvars[groups['bootstrap'][0]]['vmware_uuid'] }}"
+      state: absent
+      force: yes
+
+  - name: Approve node CSRs
+    approve_csr:
+      nodes: "{{ master_ip_addresses|length + worker_ip_addresses|length }}"
+      max_time: 600
+    register: result
+    ignore_errors: yes
+
+  - debug: var=result
+
+  - name: Wait for image registry crd to become available
+    command: oc wait --for=condition=Degraded configs.imageregistry.operator.openshift.io --all --timeout=60s
+    register: result
+    until: result.rc == 0
+    retries: 100
+    delay: 60
+    ignore_errors: yes
+
+  - name: Configure storage for the image registry
+    command: oc patch configs.imageregistry.operator.openshift.io cluster --type merge --patch '{"spec":{"storage":{"emptyDir":{}}}}'
+
+  - name: Wait for installation complete
+    command: openshift-install --dir={{ cluster_name }} wait-for install-complete
+    register: result
+
+  - debug: var=result
+
+    
