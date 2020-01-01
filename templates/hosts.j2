@@ -1,0 +1,13 @@
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+
+{{ ansible_default_ipv4.address }}	{{ ansible_hostname }}.{{ cluster_name }}.{{ domain_name }} {{ ansible_hostname }}
+
+{% for server in groups.openshift %}
+{{ hostvars[server]['ansible_host'] }} {{ server }}.{{ cluster_name }}.{{ domain_name }} {{ server }}
+{% endfor %}
+
+{% for server in groups.master %}
+{{ hostvars[server]['ansible_host'] }} etcd-{{ loop.index0 }}.{{ cluster_name }}.{{ domain_name }}
+{% endfor %}
+
+{{ ansible_default_ipv4.address }}  lb.{{ cluster_name }}.{{ domain_name }}  api.{{ cluster_name }}.{{ domain_name }} api-int.{{ cluster_name }}.{{ domain_name }}

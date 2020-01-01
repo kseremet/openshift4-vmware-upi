@@ -1,0 +1,41 @@
+apiVersion: v1
+baseDomain: {{ domain_name }}
+compute:
+- hyperthreading: Disabled
+  name: worker
+  replicas: 0
+controlPlane:
+  hyperthreading: Disabled
+  name: master
+  replicas: {{ groups.master|length }}
+metadata:
+  name: {{ cluster_name }}
+networking:
+  clusterNetworks:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  none: {}
+pullSecret: '{{ pull_secret }}'
+sshKey: '{{ authorized_ssh_keys }}'
+{% if http_proxy is defined and http_proxy|length %}
+{% set net_mask = ansible_default_ipv4.network + "/" + ansible_default_ipv4.netmask  %}
+proxy:
+  httpProxy: {{ http_proxy }}
+  httpsProxy: {{ http_proxy }}
+  noProxy: .{{ domain_name }},.{{ cluster_name }}.{{ domain_name }},{{ net_mask | ipaddr('net') }},localhost,127.0.0.1
+{% endif %}
+{% if mirror_registry is defined and mirror_registry|length %}
+additionalTrustBundle: |
+  {{ additional_trust_bundle | indent(2) }}
+imageContentSources:
+- mirrors:
+  - {{ mirror_registry }}/openshift-release-dev/ocp-release
+  source: quay.io/openshift-release-dev/ocp-release
+- mirrors:
+  - {{ mirror_registry }}/openshift-release-dev/ocp-release
+  source: quay.io/openshift-release-dev/ocp-v4.0-art-dev
+{% endif %}

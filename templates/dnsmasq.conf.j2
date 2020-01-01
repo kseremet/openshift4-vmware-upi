@@ -1,0 +1,20 @@
+
+bogus-priv
+read-ethers
+
+domain={{ cluster_name }}.{{ domain_name }}
+
+{% for server in groups.master %}
+srv-host=_etcd-server-ssl._tcp.{{ cluster_name }}.{{ domain_name }},etcd-{{ loop.index0 }}.{{ cluster_name }}.{{ domain_name }},2380,0,10
+{% endfor %}
+
+conf-dir=/etc/dnsmasq.d
+dhcp-range={{ ansible_default_ipv4.network }},static
+server=/1.168.192.in-addr.arpa/{{ ansible_default_ipv4.address }}
+local=/{{ cluster_name }}.{{ domain_name }}/
+address=/apps.{{ cluster_name }}.{{ domain_name }}/{{ ansible_default_ipv4.address }}
+dhcp-option=3,{{ ansible_default_ipv4.gateway }}
+
+{% for server in groups.openshift %}
+dhcp-host={{ server }}
+{% endfor %}

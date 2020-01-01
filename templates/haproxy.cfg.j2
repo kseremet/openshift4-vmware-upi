@@ -1,0 +1,71 @@
+global
+  log 127.0.0.1 local2
+  chroot /var/lib/haproxy
+  pidfile /var/run/haproxy.pid
+  maxconn 4000
+  user haproxy
+  group haproxy
+  daemon
+  stats socket /var/lib/haproxy/stats
+
+defaults
+  mode tcp
+  log global
+  option tcplog
+  option dontlognull
+  option redispatch
+  retries 3
+  timeout queue 1m
+  timeout connect 10s
+  timeout client 1m
+  timeout server 1m
+  timeout check 10s
+  maxconn 3000
+
+  
+# 6443 points to control plane
+frontend {{ cluster_name }}-api *:6443
+  default_backend master-api
+
+backend master-api
+  balance source
+{% for server in groups.bootstrap %}
+  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:6443 check
+{% endfor %}    
+{% for server in groups.master %}
+  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:6443 check
+{% endfor %}    
+
+
+# 22623 points to control plane
+frontend {{ cluster_name }}-mcs *:22623
+  default_backend master-mcs
+
+backend master-mcs
+  balance source
+{% for server in groups.bootstrap %}
+  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:22623 check
+{% endfor %}
+{% for server in groups.master %}
+  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:22623 check
+{% endfor %}
+
+# 80 points to worker nodes
+frontend {{ cluster_name }}-http *:80
+  default_backend ingress-http
+
+backend ingress-http
+  balance source
+{% for server in groups.worker  %}
+  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:80 check
+{% endfor %}
+
+# 443 points to worker nodes
+frontend {{ cluster_name }}-https *:443
+  default_backend ingress-https
+
+backend ingress-https
+  balance source
+{% for server in groups.worker  %}
+  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:443 check
+{% endfor %}

@@ -1,0 +1,51 @@
+---
+- name: Create OpenShift VMs
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+  - default_vars.yaml
+  tasks:
+  - name: Set IP address facts
+    set_fact:
+      master_ip_addresses: "{{ master_ips.split(',') }}"
+      worker_ip_addresses: "{{ worker_ips.split(',') }}"
+      bootstrap_ip_addresses: "{{ bootstrap_ip.split(',') }}"
+
+  - name: Create bootstrap vm
+    include_tasks: create_vm.yaml
+    vars:
+      vm_name_prefix: "{{ bootstrap_vm_name_prefix }}"
+      vm_offset: "{{ bootstrap_vm_name_offset }}"
+      cpus: "{{ master_vm_cpus }}"
+      memory: "{{ master_vm_memory }}"
+      node_role: bootstrap
+    with_items: "{{ bootstrap_ip_addresses }}"
+    loop_control:
+      loop_var: ip
+      index_var: idx
+
+  - name: Create master vms
+    include_tasks: create_vm.yaml 
+    vars:
+      vm_name_prefix: "{{ master_vm_name_prefix }}"
+      vm_offset: "{{ master_vm_name_offset }}"
+      cpus: "{{ master_vm_cpus }}"
+      memory: "{{ master_vm_memory }}"
+      node_role: master
+    with_items: "{{ master_ip_addresses }}"
+    loop_control:
+      loop_var: ip
+      index_var: idx
+
+  - name: Create worker vms
+    include_tasks: create_vm.yaml
+    vars:
+      vm_name_prefix: "{{ worker_vm_name_prefix }}"
+      vm_offset: "{{ worker_vm_name_offset }}"
+      cpus: "{{ worker_vm_cpus }}"
+      memory: "{{ worker_vm_memory }}"
+      node_role: worker
+    with_items: "{{ worker_ip_addresses }}"
+    loop_control:
+      loop_var: ip
+      index_var: idx

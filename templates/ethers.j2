@@ -1,0 +1,3 @@
+{% for server in groups.openshift %}
+{{ hostvars[server]['mac_address'] }} {{ server }}
+{% endfor %}

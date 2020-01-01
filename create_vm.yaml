@@ -1,0 +1,26 @@
+- name: Create virtual machine
+  vmware_guest:
+    validate_certs: no
+    datacenter: "{{ datacenter }}"
+    folder: "/{{ cluster_name }}"
+    name: "{{ vm_name_prefix }}{{ idx|int + vm_offset|int }}"
+    state: present
+    template: "{{ rhcos_template }}"
+    customvalues:
+    - key: "disk.EnableUUID"
+      value: "TRUE"
+    hardware:
+      memory_mb: "{{ memory }}"
+      num_cpus: "{{ cpus }}"
+  register: deploy
+
+- name: Add new VM into Ansible inventory
+  add_host:
+    hostname: "{{ vm_name_prefix }}{{ idx|int + vm_offset|int }}"
+    groups:
+    - openshift
+    - "{{ node_role }}"
+    ansible_host: "{{ ip }}"
+    ansible_user: core
+    vmware_uuid: "{{ deploy.instance.hw_product_uuid }}"
+    mac_address: "{{ deploy.instance.hw_eth0.macaddress }}"

@@ -1,0 +1,42 @@
+- hosts: localhost
+  gather_facts: false
+  vars_files:
+  - default_vars.yaml
+  vars:
+    network_utility_vm_name: "{{ cluster_name }}-utility"
+    master_ign_file: "ignitions/{{ cluster_name }}/master.ign"
+    worker_ign_file: "ignitions/{{ cluster_name }}/worker.ign"
+    bootstrap_ign_file: "ignitions/{{ cluster_name }}/bootstrap.ign"
+    bootstrap_ignition_config_url: "http://{{ network_utility_ip }}:{{ webport }}/ignitions/{{cluster_name}}_bootstrap.ign"
+  tasks:
+    - name: Configure bootstrap VM
+      include_tasks: configure_openshift_vms.yaml
+      vars:
+        node_role: bootstrap
+        ignition_template: append-bootstrap.ign.j2
+      with_items: "{{ groups.bootstrap }}"
+      loop_control:
+        loop_var: node_name
+        index_var: idx
+
+    - name: Configure control plane VMs
+      include_tasks: configure_openshift_vms.yaml
+      vars:
+        node_role: master
+        ignition_template: node.ign.j2
+        ignition_data: "{{ lookup('file', master_ign_file) }}"
+      with_items: "{{ groups.master }}"
+      loop_control:
+        loop_var: node_name
+        index_var: idx
+
+    - name: Configure worker VMs
+      include_tasks: configure_openshift_vms.yaml
+      vars:
+        node_role: worker
+        ignition_template: node.ign.j2
+        ignition_data: "{{ lookup('file', worker_ign_file) }}"
+      with_items: "{{ groups.worker }}"
+      loop_control:
+        loop_var: node_name
+        index_var: idx

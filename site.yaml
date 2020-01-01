@@ -1,0 +1,6 @@
+- import_playbook: install_network_services.yaml
+- import_playbook: create_openshift_vms.yaml
+- import_playbook: configure_network_services.yaml
+- import_playbook: create_installation_manifests.yaml
+- import_playbook: start_openshift_installation.yaml
+- import_playbook: wait_for_installation.yaml

@@ -1,0 +1,30 @@
+- name: Generate static network configuration
+  set_fact:
+    network_config: |
+      TYPE=Ethernet
+      BOOTPROTO=none
+      NAME=ens192
+      DEVICE=ens192
+      ONBOOT=yes
+      IPADDR={{ hostvars[node_name]['ansible_host'] }}
+      NETMASK={{ hostvars[network_utility_vm_name]['ansible_default_ipv4']['netmask'] }}
+      GATEWAY={{ hostvars[network_utility_vm_name]['ansible_default_ipv4']['gateway'] }}
+      DOMAIN={{ cluster_name }}.{{ domain_name }}
+      DNS1={{ network_utility_ip }}
+
+- name: Configure vApp properties
+  vmware_guest:
+    validate_certs: no
+    uuid: "{{ hostvars[node_name]['vmware_uuid'] }}"
+    state: present
+    vapp_properties:
+      - id: "guestinfo.ignition.config.data"
+        value: "{{ lookup('template', ignition_template ) | to_nice_json(indent=2) | b64encode }}"
+      - id: "guestinfo.ignition.config.data.encoding"
+        value: base64
+
+- name: Power ON VM
+  vmware_guest:
+    validate_certs: no
+    uuid: "{{ hostvars[node_name]['vmware_uuid'] }}"
+    state: poweredon

@@ -1,0 +1,58 @@
+- name: Wait for bootstrapping to start
+  hosts: bootstrap
+  gather_facts: false
+  tasks:
+  - name: Wait for bootstrap machine to be reachable over network
+    wait_for_connection:
+      delay: 60
+      timeout: 300
+
+- name: Wait for OpenShift installation to complete
+  hosts: utility
+  gather_facts: false
+  vars_files:
+  - default_vars.yaml
+  environment:
+    KUBECONFIG: "{{ cluster_name }}/auth/kubeconfig"
+  tasks:
+  - name: Wait for bootstrap complete
+    command: openshift-install --dir={{ cluster_name }} wait-for bootstrap-complete
+    register: result
+
+  - debug: var=result
+
+  - name: Remove bootstrap vm
+    vmware_guest:
+      validate_certs: no
+      uuid: "{{ hostvars[groups['bootstrap'][0]]['vmware_uuid'] }}"
+      state: absent
+      force: yes
+    delegate_to: localhost
+
+  - name: Approve node CSRs
+    approve_csr:
+      nodes: "{{ groups.master|length + groups.worker|length }}"
+      max_time: 600
+    register: result
+    ignore_errors: yes
+
+  - debug: var=result
+
+  - name: Wait for image registry crd to become available
+    command: oc wait --for=condition=Degraded configs.imageregistry.operator.openshift.io --all --timeout=60s
+    register: result
+    until: result.rc == 0
+    retries: 100
+    delay: 60
+    ignore_errors: yes
+
+  - name: Configure storage for the image registry
+    command: oc patch configs.imageregistry.operator.openshift.io cluster --type merge --patch '{"spec":{"storage":{"emptyDir":{}}}}'
+
+  - name: Wait for installation complete
+    command: openshift-install --dir={{ cluster_name }} wait-for install-complete
+    register: result
+
+  - debug: var=result
+
+    

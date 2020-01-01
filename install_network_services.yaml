@@ -1,0 +1,99 @@
+---
+- name: Create a new VM for network services
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+  - default_vars.yaml
+  vars:
+#    node_role: ""
+    network_utility_vm_name: "{{ cluster_name }}-utility"
+  tasks:
+  - name: Create a VM folder on vCenter for new OpenShift cluster
+    vcenter_folder:
+      validate_certs: no
+      datacenter: "{{ datacenter }}"
+      folder_name: "{{ cluster_name }}"
+      folder_type: vm
+      state: present
+
+  - name: Create network utility vm
+    vmware_guest:
+      validate_certs: no
+      datacenter: "{{ datacenter }}"
+      folder: "/{{ cluster_name }}"
+      name: "{{ network_utility_vm_name }}"
+      state: poweredon
+      template: "{{ network_utility_vm_template }}"
+      networks:
+      - name: "{{ network_utility_networkname }}"
+        ip: "{{ network_utility_ip }}"
+        netmask: "{{ network_utility_netmask }}"
+        gateway: "{{network_utility_gateway }}"
+      customization:
+        dns_servers:  "{{ network_utility_dns_servers }}"
+        domain: "{{ domain_name }}"
+      hardware:
+        memory_mb: 4096
+        num_cpus: 2
+    register: deploy
+
+  - name: Add network services VM into Ansible's run-time inventory
+    add_host:
+      hostname: "{{ network_utility_vm_name }}"
+      groups: utility
+      ansible_host: "{{ network_utility_ip }}"
+      ansible_user: root
+
+- name: Wait for utility to start
+  hosts: utility
+  gather_facts: false
+  tasks:
+  - name: Wait for network utility machine to be reachable over network
+    wait_for_connection:
+      delay: 10
+      timeout: 300
+
+- name: Install Network Services
+  hosts: utility
+  gather_facts: true
+  vars_files:
+  - default_vars.yaml
+  tasks:
+  - name: Configure http proxy settings
+    block:
+    - name: Add http_proxy settings into .bashrc
+      lineinfile:
+        dest: "{{ ansible_user_dir }}/.bashrc"
+        line: export http_proxy={{ http_proxy }}
+        state: present
+    - lineinfile:
+        dest: "{{ ansible_user_dir }}/.bashrc"
+        line: export https_proxy={{ http_proxy }}
+        state: present
+    - lineinfile:
+        dest: "{{ ansible_user_dir }}/.bashrc"
+        line: export no_proxy=.{{ domain_name }},.{{ cluster_name }}.{{ domain_name }},{{ installer_artifacts_url | urlsplit('hostname') }},localhost,127.0.0.1
+        state: present
+    - name: Configure proxy for yum
+      ini_file:
+        path: /etc/yum.conf
+        section: main
+        option: proxy
+        value: "{{ http_proxy }}"
+        backup: yes
+    when: http_proxy is defined and http_proxy != ""
+
+  - name: Ensure network services are installed
+    yum:
+      name: "{{ packages }}"
+      update_cache: 'yes'
+      state: present
+    vars:
+      packages:
+      - haproxy
+      - dnsmasq
+      - httpd
+      - policycoreutils-python
+
+  - name: install and configure httpd
+    include_tasks: install_httpd.yaml

@@ -33,7 +33,7 @@
 
                 },
                 "contents": {
-                    "source": "data:text/plain;charset=utf-8;base64,{{ node_name | b64encode }}",
+                    "source": "data:text/plain;charset=utf-8;base64,{{ [node_name, cluster_name] | join('.') | b64encode }}",
                     "verification": {
 
                     }
