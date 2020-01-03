@@ -1,10 +1,7 @@
 ###### NETWORK UTILITY
-webport: 9000
-network_utility_vm_template: centos_7_1810_x86-64
-network_utility_networkname: vlan_301
-network_utility_netmask: 255.255.255.0
-network_utility_gateway: 192.168.191.2
-network_utility_dns_servers: 8.8.8.8
+httpd_port: 8080
+haproxy_image: quay.io/redhat/haproxy:1.8.20
+httpd_image: registry.redhat.io/rhel8/httpd-24:latest
 
 ###### OPENSHIFT VMs
 bootstrap_vm_name_prefix: "{{ cluster_name }}-bootstrap"

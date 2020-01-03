@@ -1,6 +1,11 @@
+- name: Ensure /etc/haproxy directory exists
+  file:
+    path: /etc/haproxy
+    state: directory
+
 - name: update haproxy config
   template:
-    src: templates/haproxy.cfg.j2
+    src: haproxy.cfg.j2
     dest: /etc/haproxy/haproxy.cfg
 
 - name: update selinux for port 6443

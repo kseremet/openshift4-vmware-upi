@@ -5,8 +5,8 @@
   vars_files:
   - default_vars.yaml
   vars:
-#    node_role: ""
     network_utility_vm_name: "{{ cluster_name }}-utility"
+    ignition_template: network-utility.ign.j2
   tasks:
   - name: Create a VM folder on vCenter for new OpenShift cluster
     vcenter_folder:
@@ -16,25 +16,38 @@
       folder_type: vm
       state: present
 
+  - name: Generate static network configuration of network-utility VM
+    set_fact:
+      network_config: |
+        TYPE=Ethernet
+        BOOTPROTO=none
+        NAME=ens192
+        DEVICE=ens192
+        ONBOOT=yes
+        IPADDR={{ network_utility_ip }}
+        NETMASK={{ network_utility_netmask }}
+        GATEWAY={{ network_utility_gateway }}
+        DOMAIN={{ cluster_name }}.{{ domain_name }}
+        DNS1={{ network_utility_dns_server }}
+
   - name: Create network utility vm
     vmware_guest:
       validate_certs: no
       datacenter: "{{ datacenter }}"
       folder: "/{{ cluster_name }}"
       name: "{{ network_utility_vm_name }}"
+      template: "{{ rhcos_template }}"
       state: poweredon
-      template: "{{ network_utility_vm_template }}"
       networks:
-      - name: "{{ network_utility_networkname }}"
-        ip: "{{ network_utility_ip }}"
-        netmask: "{{ network_utility_netmask }}"
-        gateway: "{{network_utility_gateway }}"
-      customization:
-        dns_servers:  "{{ network_utility_dns_servers }}"
-        domain: "{{ domain_name }}"
+      - name: "{{ vm_network }}"
       hardware:
         memory_mb: 4096
         num_cpus: 2
+      vapp_properties:
+      - id: "guestinfo.ignition.config.data"
+        value: "{{ lookup('template', ignition_template ) | to_nice_json(indent=2) | b64encode }}"
+      - id: "guestinfo.ignition.config.data.encoding"
+        value: base64
     register: deploy
 
   - name: Add network services VM into Ansible's run-time inventory
@@ -42,7 +55,7 @@
       hostname: "{{ network_utility_vm_name }}"
       groups: utility
       ansible_host: "{{ network_utility_ip }}"
-      ansible_user: root
+      ansible_user: core
 
 - name: Wait for utility to start
   hosts: utility
@@ -51,49 +64,68 @@
   - name: Wait for network utility machine to be reachable over network
     wait_for_connection:
       delay: 10
-      timeout: 300
+      timeout: 600
 
 - name: Install Network Services
   hosts: utility
   gather_facts: true
+  become: yes
   vars_files:
   - default_vars.yaml
+  environment:
+    http_proxy: "{{ http_proxy }}"
+    https_proxy: "{{ http_proxy }}"
+    no_proxy: ".{{ domain_name }},.{{ cluster_name }}.{{ domain_name }},localhost,127.0.0.1"
   tasks:
   - name: Configure http proxy settings
     block:
-    - name: Add http_proxy settings into .bashrc
+    - name: Add http_proxy setting into /etc/profile
       lineinfile:
-        dest: "{{ ansible_user_dir }}/.bashrc"
+        dest: /etc/profile
         line: export http_proxy={{ http_proxy }}
         state: present
-    - lineinfile:
-        dest: "{{ ansible_user_dir }}/.bashrc"
+    - name: Add https_proxy setting into /etc/profile
+      lineinfile:
+        dest: /etc/profile
         line: export https_proxy={{ http_proxy }}
         state: present
-    - lineinfile:
-        dest: "{{ ansible_user_dir }}/.bashrc"
-        line: export no_proxy=.{{ domain_name }},.{{ cluster_name }}.{{ domain_name }},{{ installer_artifacts_url | urlsplit('hostname') }},localhost,127.0.0.1
+    - name: Add no_proxy setting into /etc/profile
+      lineinfile:
+        dest: /etc/profile
+        line: export no_proxy=.{{ domain_name }},.{{ cluster_name }}.{{ domain_name }},{{ (ansible_default_ipv4.network + "/" + ansible_default_ipv4.netmask) | ipaddr('net') }},localhost,127.0.0.1
         state: present
-    - name: Configure proxy for yum
-      ini_file:
-        path: /etc/yum.conf
-        section: main
-        option: proxy
-        value: "{{ http_proxy }}"
-        backup: yes
     when: http_proxy is defined and http_proxy != ""
+  
+  - name: Ensure container images of network services are pulled
+    command: podman pull "{{ item }}"
+    with_items:
+    - "{{ haproxy_image }}"
+    - "{{ httpd_image }}"
 
-  - name: Ensure network services are installed
-    yum:
-      name: "{{ packages }}"
-      update_cache: 'yes'
-      state: present
-    vars:
-      packages:
-      - haproxy
-      - dnsmasq
-      - httpd
-      - policycoreutils-python
+  - name: Download OpenShift installer
+    get_url:
+      url: "{{ installer_artifacts_url }}/{{ installer_file }}"
+      dest: "/tmp/{{ installer_file }}"
+      mode: 0755
+      validate_certs: no
 
-  - name: install and configure httpd
-    include_tasks: install_httpd.yaml
+  - name: Extract Openshift installer 
+    unarchive:
+      src: "/tmp/{{ installer_file }}"
+      dest: /usr/local/bin
+      creates: /usr/local/bin/openshift-installer
+      remote_src: yes
+
+  - name: Download OpenShift client
+    get_url:
+      url: "{{ installer_artifacts_url }}/{{ oc_client_file }}"
+      dest: "/tmp/{{ oc_client_file }}"
+      mode: 0755
+      validate_certs: no
+
+  - name: Extract Openshift client
+    unarchive:
+      src: "/tmp/{{ oc_client_file }}"
+      dest: /usr/local/bin
+      creates: /usr/local/bin/oc
+      remote_src: yes

@@ -6,6 +6,8 @@
     name: "{{ vm_name_prefix }}{{ idx|int + vm_offset|int }}"
     state: present
     template: "{{ rhcos_template }}"
+    networks:
+    - name: "{{ vm_network }}"
     customvalues:
     - key: "disk.EnableUUID"
       value: "TRUE"

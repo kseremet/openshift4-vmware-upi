@@ -1,11 +1,6 @@
 global
   log 127.0.0.1 local2
-  chroot /var/lib/haproxy
-  pidfile /var/run/haproxy.pid
   maxconn 4000
-  user haproxy
-  group haproxy
-  daemon
   stats socket /var/lib/haproxy/stats
 
 defaults
@@ -24,7 +19,8 @@ defaults
 
   
 # 6443 points to control plane
-frontend {{ cluster_name }}-api *:6443
+frontend {{ cluster_name }}-api
+  bind *:6443
   default_backend master-api
 
 backend master-api
@@ -38,7 +34,8 @@ backend master-api
 
 
 # 22623 points to control plane
-frontend {{ cluster_name }}-mcs *:22623
+frontend {{ cluster_name }}-mcs
+  bind *:22623
   default_backend master-mcs
 
 backend master-mcs
@@ -51,7 +48,8 @@ backend master-mcs
 {% endfor %}
 
 # 80 points to worker nodes
-frontend {{ cluster_name }}-http *:80
+frontend {{ cluster_name }}-http
+  bind *:80
   default_backend ingress-http
 
 backend ingress-http
@@ -61,7 +59,8 @@ backend ingress-http
 {% endfor %}
 
 # 443 points to worker nodes
-frontend {{ cluster_name }}-https *:443
+frontend {{ cluster_name }}-https
+  bind *:443
   default_backend ingress-https
 
 backend ingress-https

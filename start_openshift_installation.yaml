@@ -7,7 +7,7 @@
     master_ign_file: "ignitions/{{ cluster_name }}/master.ign"
     worker_ign_file: "ignitions/{{ cluster_name }}/worker.ign"
     bootstrap_ign_file: "ignitions/{{ cluster_name }}/bootstrap.ign"
-    bootstrap_ignition_config_url: "http://{{ network_utility_ip }}:{{ webport }}/ignitions/{{cluster_name}}_bootstrap.ign"
+    bootstrap_ignition_config_url: "http://{{ network_utility_ip }}:{{ httpd_port }}/ignitions/{{cluster_name}}_bootstrap.ign"
   tasks:
     - name: Configure bootstrap VM
       include_tasks: configure_openshift_vms.yaml

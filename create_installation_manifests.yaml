@@ -8,7 +8,7 @@
     worker_ign_file: "{{ cluster_name }}/worker.ign"
     bootstrap_ign_file: "{{ cluster_name }}/bootstrap.ign"
     http_document_root: "/var/www/html/ignitions"
-    bootstrap_ignition_config_url: "http://{{ ansible_default_ipv4.address }}:{{ webport }}/ignitions/{{ cluster_name }}_bootstrap.ign"
+    bootstrap_ignition_config_url: "http://{{ ansible_default_ipv4.address }}:{{ httpd_port }}/ignitions/{{ cluster_name }}_bootstrap.ign"
   tasks: 
   - name: Create new cluster's directory on network utility server
     file:
@@ -19,10 +19,11 @@
     file:
       path: "ignitions/{{ cluster_name }}"
       state: directory
+    delegate_to: localhost
 
   - name: Generate install-config.yaml and put it into cluster's directory
     template:
-      src: templates/install-config.j2
+      src: install-config.j2
       dest: "{{ cluster_name }}/install-config.yaml"
 
   - name: Backup install-config.yaml
@@ -39,6 +40,7 @@
       remote_src: yes
       src: "{{ bootstrap_ign_file }}"
       dest: "{{ http_document_root }}/{{ cluster_name }}_bootstrap.ign"
+    become: yes
   
   - name: Check that http server is serving bootstrap ignition file
     uri:

@@ -1,14 +1,7 @@
 {
     "ignition": {
         "config": {
-            "append": [
-                {
-                    "source": "data:text/plain;charset=utf-8;base64,{{ ignition_data | to_nice_json(indent=2) | b64encode}}",
-                    "verification": {
 
-                    }
-                }
-            ]
         },
         "timeouts": {
 
@@ -19,10 +12,31 @@
 
     },
     "passwd": {
-
+        "users": [
+            {
+                "name": "core",
+                "sshAuthorizedKeys": [
+                    "{{ authorized_ssh_keys }}"
+                ]
+            }
+        ]
     },
     "storage": {
         "files": [
+            {
+                "filesystem": "root",
+                "path": "/root/.docker/config.json",
+                "user": {
+                    "name": "root"
+                },
+                "contents": {
+                    "source": "data:text/plain;charset=utf-8;base64,{{ pull_secret | b64encode }}",
+                    "verification": {
+                        
+                    }
+                },
+                "mode": 384
+            },
             {
                 "filesystem": "root",
                 "group": {
@@ -33,7 +47,7 @@
 
                 },
                 "contents": {
-                    "source": "data:text/plain;charset=utf-8;base64,{{ [node_name, cluster_name, domain_name] | join('.') | b64encode }}",
+                    "source": "data:text/plain;charset=utf-8;base64,{{ [network_utility_vm_name, cluster_name, domain_name] | join('.') | b64encode }}",
                     "verification": {
 
                     }
