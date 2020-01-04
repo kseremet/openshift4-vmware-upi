@@ -73,8 +73,8 @@
   vars_files:
   - default_vars.yaml
   environment:
-    http_proxy: "{{ http_proxy }}"
-    https_proxy: "{{ http_proxy }}"
+    http_proxy: "{{ http_proxy | default('') }}"
+    https_proxy: "{{ http_proxy | default('') }}"
     no_proxy: ".{{ domain_name }},.{{ cluster_name }}.{{ domain_name }},localhost,127.0.0.1"
   tasks:
   - name: Configure http proxy settings
