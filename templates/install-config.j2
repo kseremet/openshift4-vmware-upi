@@ -18,7 +18,12 @@ networking:
   serviceNetwork:
   - 172.30.0.0/16
 platform:
-  none: {}
+  vsphere:
+    vcenter: {{ lookup('env','VMWARE_HOST') }}
+    username: {{ lookup('env','VMWARE_USER') }}
+    password: {{ lookup('env','VMWARE_PASSWORD') }}
+    datacenter: {{ datacenter }}
+    defaultDatastore: {{ datastore }}
 pullSecret: '{{ pull_secret }}'
 sshKey: '{{ authorized_ssh_keys }}'
 {% if http_proxy is defined and http_proxy|length %}
@@ -28,9 +33,11 @@ proxy:
   httpsProxy: {{ http_proxy }}
   noProxy: .{{ domain_name }},.{{ cluster_name }}.{{ domain_name }},{{ net_mask | ipaddr('net') }},localhost,127.0.0.1
 {% endif %}
-{% if mirror_registry is defined and mirror_registry|length %}
+{% if additional_trust_bundle is defined and additional_trust_bundle|length %}
 additionalTrustBundle: |
   {{ additional_trust_bundle | indent(2) }}
+{% endif %}
+{% if mirror_registry is defined and mirror_registry|length %}
 imageContentSources:
 - mirrors:
   - {{ mirror_registry }}/openshift-release-dev/ocp-release

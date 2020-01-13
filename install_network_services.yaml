@@ -101,6 +101,9 @@
     with_items:
     - "{{ haproxy_image }}"
     - "{{ httpd_image }}"
+    register: result
+    until: result is succeeded
+    retries: 5
 
   - name: Download OpenShift installer
     get_url:

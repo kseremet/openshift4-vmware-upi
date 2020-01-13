@@ -19,6 +19,6 @@ worker_vm_cpus: 4
 ###### INSTALLER & OC CLIENT FILES
 openshift_major_version: 4.2
 openshift_minor_version: 12
-installer_artifacts_url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest-{{ openshift_major_version }}
+installer_artifacts_url: https://mirror.openshift.com/pub/openshift-v4/clients/ocp/{{ openshift_major_version }}.{{ openshift_minor_version }}
 installer_file: openshift-install-linux-{{ openshift_major_version }}.{{ openshift_minor_version }}.tar.gz
 oc_client_file: openshift-client-linux-{{ openshift_major_version }}.{{ openshift_minor_version }}.tar.gz

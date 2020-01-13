@@ -37,6 +37,7 @@ Here you can find the list of variables used and their roles explained.
 |cluster_name    |OpenShift cluster name         |cluster_name: openshift      |
 |domain_name     |Base DNS domain.           |domain_name: example.com          |
 |datacenter      |vSphere datacenter in which openshift vms will be created | datacenter: TestDC|
+|datastore      |The default vSphere datastore in which openshift vms will be created | datastore: testDS01|
 |vm_network    |VM network/Portgroup name in vCenter in which vms will located         |vm_network: vlan_100      |
 |network_utility_ip     |Ip address to assign to network utility vm.|network_utility_ip: 192.168.0.10          |
 |bootstrap_ip          |Ip address to assign to bootstrap vm. | bootstrap_ip: 192.168.0.11|
@@ -48,6 +49,7 @@ Here you can find the list of variables used and their roles explained.
 |openshift_major_version          |OpenShift 4.**x**.y major version to be installed | openshift_major_version: 4.2|
 |openshift_minor_version |OpenShift 4.x.**y** minor version to be installed | openshift_minor_version: 12|
 |http_proxy          |Http(s) proxy server to use if any. Direct internet connectivity is assumed if not defined |http_proxy: http://192.168.191.20:8888|
+|additional_trust_bundle   |Provide the contents of the certificate file that are required for proxying HTTPS connections. You can find the deails [here](https://docs.openshift.com/container-platform/4.2/networking/configuring-a-custom-pki.html) |additional_trust_bundle: -----BEGIN CERTIFICATE-----|
 |openshift_minor_version |OpenShift 4.x.**y** minor version to be installed | openshift_minor_version: 12|
 |network_utility_netmask          |Netmask to use when assigning static ip addresses to nodes |network_utility_netmask: 255.255.255.0|
 |network_utility_gateway |Network gateway ip address to set on all nodes | network_utility_gateway: 192.168.0.1|
