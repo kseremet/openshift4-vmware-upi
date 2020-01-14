@@ -34,6 +34,8 @@
     vmware_guest:
       validate_certs: no
       datacenter: "{{ datacenter }}"
+      cluster:  "{{ vmware_cluster }}"
+      datastore: "{{ datastore }}"
       folder: "/{{ cluster_name }}"
       name: "{{ network_utility_vm_name }}"
       template: "{{ rhcos_template }}"

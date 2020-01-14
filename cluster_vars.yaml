@@ -1,8 +1,10 @@
 domain_name: example.com
 cluster_name: openshift
 datacenter: TestDC
-datastore: tpsw1_p1_d4
+datastore: Datastore01
+vmware_cluster: Cluster01
 vm_network: vlan_100
+vm_rootdisk_size: 120
 network_utility_ip: 192.168.0.10
 bootstrap_ip: 192.168.0.11
 master_ips: 192.168.0.12,192.168.0.13,192.168.0.14

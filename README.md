@@ -37,8 +37,10 @@ Here you can find the list of variables used and their roles explained.
 |cluster_name    |OpenShift cluster name         |cluster_name: openshift      |
 |domain_name     |Base DNS domain.           |domain_name: example.com          |
 |datacenter      |vSphere datacenter in which openshift vms will be created | datacenter: TestDC|
+|vmware_cluster  |vSphere cluster in which openshift vms will be created | vmware_cluster: TestCLS01|
 |datastore      |The default vSphere datastore in which openshift vms will be created | datastore: testDS01|
 |vm_network    |VM network/Portgroup name in vCenter in which vms will located         |vm_network: vlan_100      |
+|vm_rootdisk_size  |Size of the root disk in GiB of the OpenShift VMs. Min 120G is required |vm_rootdisk_size: 120      |
 |network_utility_ip     |Ip address to assign to network utility vm.|network_utility_ip: 192.168.0.10          |
 |bootstrap_ip          |Ip address to assign to bootstrap vm. | bootstrap_ip: 192.168.0.11|
 |master_ips          |Comma separated ip addresses to assign to OpenShift master vms. | master_ips: 192.168.0.12,192.168.0.13,192.168.0.14|

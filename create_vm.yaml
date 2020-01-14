@@ -2,6 +2,8 @@
   vmware_guest:
     validate_certs: no
     datacenter: "{{ datacenter }}"
+    cluster:  "{{ vmware_cluster }}"
+    datastore: "{{ datastore }}"
     folder: "/{{ cluster_name }}"
     name: "{{ vm_name_prefix }}{{ idx|int + vm_offset|int }}"
     state: present
@@ -15,6 +17,20 @@
       memory_mb: "{{ memory }}"
       num_cpus: "{{ cpus }}"
   register: deploy
+
+- name: Ensure the root disk of the vm is sized appropriately
+  vmware_guest_disk:
+    validate_certs: no
+    datacenter: "{{ datacenter }}"
+    folder: "/{{ cluster_name }}"
+    uuid: "{{ deploy.instance.hw_product_uuid }}"
+    disk:
+    - state: present
+      datastore: "{{ datastore }}"
+      type: thin
+      scsi_controller: 0
+      unit_number: 0
+      size_gb: "{{ vm_rootdisk_size }}"
 
 - name: Add new VM into Ansible inventory
   add_host:

@@ -11,6 +11,7 @@ bootstrap_vm_name_offset: "0"
 master_vm_name_offset: "0"
 worker_vm_name_offset: "0"
 rhcos_template: rhcos-4.2.0-20191015.0
+vm_rootdisk_size: 120
 master_vm_memory: 16384
 worker_vm_memory: 8192
 master_vm_cpus: 4
