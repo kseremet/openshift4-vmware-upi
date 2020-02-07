@@ -32,6 +32,15 @@
       dest: install-config.yaml
       remote_src: yes
 
+  - name: Create installation manifests of new cluster
+    command: openshift-install create manifests --dir={{ cluster_name }}
+    
+  - name: Set masters as unschedulable
+    lineinfile:
+      path: "{{ cluster_name }}/manifests/cluster-scheduler-02-config.yml"
+      regexp: 'mastersSchedulable: true'
+      line: '  mastersSchedulable: false'
+    
   - name: Create ignition configs of new cluster
     command: openshift-install create ignition-configs --dir={{ cluster_name }}
 
