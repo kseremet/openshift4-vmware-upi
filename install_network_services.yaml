@@ -43,8 +43,8 @@
       networks:
       - name: "{{ vm_network }}"
       hardware:
-        memory_mb: 4096
-        num_cpus: 2
+        memory_mb: "{{ network_utility_vm_memory }}"
+        num_cpus: "{{ network_utility_vm_cpus }}"
       vapp_properties:
       - id: "guestinfo.ignition.config.data"
         value: "{{ lookup('template', ignition_template ) | to_nice_json(indent=2) | b64encode }}"

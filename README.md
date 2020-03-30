@@ -56,6 +56,8 @@ Here you can find the list of variables used and their roles explained.
 |network_utility_netmask          |Netmask to use when assigning static ip addresses to nodes |network_utility_netmask: 255.255.255.0|
 |network_utility_gateway |Network gateway ip address to set on all nodes | network_utility_gateway: 192.168.0.1|
 |network_utility_dns_server          |DNS server ip address to use on network utility server. |network_utility_dns_server: 192.168.1.2|
+|network_utility_vm_memory |Memory in MiB to assign network utility server | network_utility_vm_memory: 4096|
+|network_utility_vm_cpus |Number of vCPUs to assign network utility server | network_utility_vm_cpus: 2|
 |(master\|worker)_vm_memory |Memory in MiB to assign different OpenShift node roles | master_vm_memory: 16384|
 |(master\|worker)_vm_cpus |Number of vCPUs to assign different OpenShift node roles | master_vm_cpus: 4|
 |(bootstrap\|master\|worker)_vm_name_prefix |VM name prefixes of different OpenShift vm roles. A numeric suffix will be appended | master_vm_name_prefix: "{{ cluster_name }}-master"|
