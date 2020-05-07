@@ -45,9 +45,11 @@
     retries: 100
     delay: 60
     ignore_errors: yes
+    when: openshift_major_version < 4.3
 
   - name: Configure storage for the image registry
     command: oc patch configs.imageregistry.operator.openshift.io cluster --type merge --patch '{"spec":{"storage":{"emptyDir":{}}}}'
+    when: openshift_major_version < 4.3
 
   - name: Wait for installation complete
     command: openshift-install --dir={{ cluster_name }} wait-for install-complete
