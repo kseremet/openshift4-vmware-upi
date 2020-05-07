@@ -62,5 +62,6 @@ Here you can find the list of variables used and their roles explained.
 |(master\|worker)_vm_cpus |Number of vCPUs to assign different OpenShift node roles | master_vm_cpus: 4|
 |(bootstrap\|master\|worker)_vm_name_prefix |VM name prefixes of different OpenShift vm roles. A numeric suffix will be appended | master_vm_name_prefix: "{{ cluster_name }}-master"|
 |(bootstrap\|master\|worker)_vm_name_offset |VM name numeric suffix to start naming vms of different OpenShift vm roles.| master_vm_name_offset: "0"|
+|set_masters_unschedulable |If set to no then master machines will also configured as workers | set_masters_unschedulable: yes|
 
 

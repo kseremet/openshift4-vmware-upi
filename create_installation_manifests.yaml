@@ -40,6 +40,7 @@
       path: "{{ cluster_name }}/manifests/cluster-scheduler-02-config.yml"
       regexp: 'mastersSchedulable: true'
       line: '  mastersSchedulable: false'
+    when: set_masters_unschedulable | default(False)
     
   - name: Create ignition configs of new cluster
     command: openshift-install create ignition-configs --dir={{ cluster_name }}

@@ -79,6 +79,12 @@
     https_proxy: "{{ http_proxy | default('') }}"
     no_proxy: ".{{ domain_name }},.{{ cluster_name }}.{{ domain_name }},localhost,127.0.0.1"
   tasks:
+  - name: Add KUBECONFIG environment variable into /etc/profile
+    lineinfile:
+      dest: /etc/profile
+      line: export KUBECONFIG=/home/core/{{ cluster_name }}/auth/kubeconfig
+      state: present
+
   - name: Configure http proxy settings
     block:
     - name: Add http_proxy setting into /etc/profile
