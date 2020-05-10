@@ -5,18 +5,17 @@ global
 
 defaults
   mode tcp
-  log global
-  option tcplog
-  option dontlognull
-  option redispatch
-  retries 3
-  timeout queue 1m
-  timeout connect 10s
-  timeout client 1m
-  timeout server 1m
-  timeout check 10s
+  timeout connect 5s
+  timeout client 30s
+  timeout client-fin 1s
+  timeout server 30s
+  timeout server-fin 1s
+  timeout http-request 10s
+  timeout http-keep-alive 300s
   maxconn 3000
-
+  
+  # Long timeout for WebSocket connections.
+  timeout tunnel 1h
   
 # 6443 points to control plane
 frontend {{ cluster_name }}-api
@@ -66,15 +65,17 @@ backend ingress-http
 # 443 points to worker nodes
 frontend {{ cluster_name }}-https
   bind *:443
+  tcp-request  inspect-delay 5s
+  tcp-request content accept if { req_ssl_hello_type 1 }
   default_backend ingress-https
 
 backend ingress-https
   balance source
 {% if set_masters_unschedulable is false %}
 {% for server in groups.master %}
-  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:443 check
+  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:443 check inter 5000ms
 {% endfor %}    
 {% endif %}
 {% for server in groups.worker  %}
-  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:443 check
+  server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:443 check inter 5000ms
 {% endfor %}
