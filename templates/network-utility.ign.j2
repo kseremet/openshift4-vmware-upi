@@ -23,6 +23,22 @@
     },
     "storage": {
         "files": [
+{% if additional_trust_bundle is defined %}
+            {
+                "filesystem": "root",
+                "path": "/etc/pki/ca-trust/source/anchors/proxy_ca.cert",
+                "user": {
+                    "name": "root"
+                },
+                "contents": {
+                    "source": "data:text/plain;charset=utf-8;base64,{{ additional_trust_bundle | b64encode }}",
+                    "verification": {
+                        
+                    }
+                },
+                "mode": 420
+            },
+{% endif %}
             {
                 "filesystem": "root",
                 "path": "/root/.docker/config.json",
