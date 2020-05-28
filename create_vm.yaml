@@ -16,6 +16,9 @@
     hardware:
       memory_mb: "{{ memory }}"
       num_cpus: "{{ cpus }}"
+      hotadd_cpu: yes
+      hotremove_cpu: yes
+      hotadd_memory: yes
   register: deploy
 
 - name: Ensure the root disk of the vm is sized appropriately
