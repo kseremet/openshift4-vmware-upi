@@ -1,6 +1,6 @@
 ###### NETWORK UTILITY
 httpd_port: 8080
-haproxy_image: quay.io/redhat/haproxy:1.8.20
+haproxy_image: quay.io/koray/haproxy:1.8.20
 httpd_image: registry.redhat.io/rhel8/httpd-24:latest
 network_utility_vm_memory: 4096
 network_utility_vm_cpus: 2
