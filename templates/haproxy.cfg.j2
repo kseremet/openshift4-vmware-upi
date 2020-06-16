@@ -53,7 +53,7 @@ frontend {{ cluster_name }}-http
 
 backend ingress-http
   balance source
-{% if set_masters_unschedulable is false %}
+{% if not set_masters_unschedulable %}
 {% for server in groups.master %}
   server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:80 check
 {% endfor %}    
@@ -71,7 +71,7 @@ frontend {{ cluster_name }}-https
 
 backend ingress-https
   balance source
-{% if set_masters_unschedulable is false %}
+{% if not set_masters_unschedulable %}
 {% for server in groups.master %}
   server {{ server }} {{ server }}.{{ cluster_name }}.{{ domain_name }}:443 check inter 5000ms
 {% endfor %}    
