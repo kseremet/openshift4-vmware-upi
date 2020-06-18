@@ -108,7 +108,7 @@
     when: http_proxy is defined and http_proxy != ""
   
   - name: Ensure container images of network services are pulled
-    command: podman pull "{{ item }}"
+    command: timeout --kill-after=15m 10m podman pull "{{ item }}"
     with_items:
     - "{{ haproxy_image }}"
     - "{{ httpd_image }}"
