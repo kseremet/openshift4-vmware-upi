@@ -35,6 +35,10 @@
   - name: Create installation manifests of new cluster
     command: openshift-install create manifests --dir={{ cluster_name }}
     
+  - name: Remove machines and machinesets
+    command: rm -f {{ cluster_name }}/openshift/99_openshift-cluster-api_master-machines-*.yaml {{ cluster_name }}/openshift/99_openshift-cluster-api_worker-machineset-*.yaml
+    when: openshift_major_version == 4.5
+    
   - name: Set masters as unschedulable
     lineinfile:
       path: "{{ cluster_name }}/manifests/cluster-scheduler-02-config.yml"
