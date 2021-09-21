@@ -34,6 +34,20 @@
 
   - name: Create installation manifests of new cluster
     command: openshift-install create manifests --dir={{ cluster_name }}
+
+  - name: Find the Kubernetes manifest files that define the control plane machines and compute machine sets
+    find:
+      paths: "{{ cluster_name }}/openshift"
+      patterns:
+      - 99_openshift-cluster-api_master-machines-*.yaml
+      - 99_openshift-cluster-api_worker-machineset-*.yaml
+    register: manifests_to_delete
+
+  - name: Ensure the Kubernetes manifest files that define the control plane machines and compute machine sets are deleted
+    file:
+      path: "{{ item.path }}"
+      state: absent
+    with_items: "{{ manifests_to_delete.files }}"
     
   - name: Set masters as unschedulable
     lineinfile:
