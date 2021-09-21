@@ -7,13 +7,14 @@
     master_ign_file: "ignitions/{{ cluster_name }}/master.ign"
     worker_ign_file: "ignitions/{{ cluster_name }}/worker.ign"
     bootstrap_ign_file: "ignitions/{{ cluster_name }}/bootstrap.ign"
-    bootstrap_ignition_config_url: "http://{{ network_utility_ip }}:{{ httpd_port }}/ignitions/{{cluster_name}}_bootstrap.ign"
+    # bootstrap_ignition_config_url: "http://{{ network_utility_ip }}:{{ httpd_port }}/ignitions/{{cluster_name}}_bootstrap.ign"
   tasks:
     - name: Configure bootstrap VM
       include_tasks: configure_openshift_vms.yaml
       vars:
         node_role: bootstrap
-        ignition_template: append-bootstrap.ign.j2
+        ignition_data: "{{ lookup('file', bootstrap_ign_file) }}"
+        # ignition_template: append-bootstrap.ign.j2
       with_items: "{{ groups.bootstrap }}"
       loop_control:
         loop_var: node_name
@@ -23,7 +24,7 @@
       include_tasks: configure_openshift_vms.yaml
       vars:
         node_role: master
-        ignition_template: node.ign.j2
+        # ignition_template: node.ign.j2
         ignition_data: "{{ lookup('file', master_ign_file) }}"
       with_items: "{{ groups.master }}"
       loop_control:
@@ -34,7 +35,7 @@
       include_tasks: configure_openshift_vms.yaml
       vars:
         node_role: worker
-        ignition_template: node.ign.j2
+        # ignition_template: node.ign.j2
         ignition_data: "{{ lookup('file', worker_ign_file) }}"
       with_items: "{{ groups.worker }}"
       loop_control:

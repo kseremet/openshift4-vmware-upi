@@ -16,19 +16,19 @@
       folder_type: vm
       state: present
 
-  - name: Generate static network configuration of network-utility VM
-    set_fact:
-      network_config: |
-        TYPE=Ethernet
-        BOOTPROTO=none
-        NAME=ens192
-        DEVICE=ens192
-        ONBOOT=yes
-        IPADDR={{ network_utility_ip }}
-        NETMASK={{ network_utility_netmask }}
-        GATEWAY={{ network_utility_gateway }}
-        DOMAIN={{ cluster_name }}.{{ domain_name }}
-        DNS1={{ network_utility_dns_server }}
+  # - name: Generate static network configuration of network-utility VM
+  #   set_fact:
+  #     network_config: |
+  #       TYPE=Ethernet
+  #       BOOTPROTO=none
+  #       NAME=ens192
+  #       DEVICE=ens192
+  #       ONBOOT=yes
+  #       IPADDR={{ network_utility_ip }}
+  #       NETMASK={{ network_utility_netmask }}
+  #       GATEWAY={{ network_utility_gateway }}
+  #       DOMAIN={{ cluster_name }}.{{ domain_name }}
+  #       DNS1={{ network_utility_dns_server }}
 
   - name: Create network utility vm
     vmware_guest:
@@ -48,11 +48,13 @@
         hotadd_cpu: yes
         hotremove_cpu: yes
         hotadd_memory: yes
-      vapp_properties:
-      - id: "guestinfo.ignition.config.data"
+      customvalues:
+      - key: "guestinfo.ignition.config.data"
         value: "{{ lookup('template', ignition_template ) | to_nice_json(indent=2) | b64encode }}"
-      - id: "guestinfo.ignition.config.data.encoding"
+      - key: "guestinfo.ignition.config.data.encoding"
         value: base64
+      - key: "guestinfo.afterburn.initrd.network-kargs"
+        value: "ip={{ network_utility_ip }}::{{ network_utility_gateway }}:{{ network_utility_netmask }}:{{ network_utility_vm_name }}.{{ cluster_name }}.{{ domain_name }}::none nameserver={{ network_utility_dns_server }}"
     register: deploy
 
   - name: Add network services VM into Ansible's run-time inventory
@@ -111,7 +113,7 @@
     command: timeout --kill-after=10m 5m podman pull "{{ item }}"
     with_items:
     - "{{ haproxy_image }}"
-    - "{{ httpd_image }}"
+    # - "{{ httpd_image }}"
     register: result
     until: result is succeeded
     retries: 5

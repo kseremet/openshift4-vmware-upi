@@ -7,10 +7,10 @@
   - default_vars.yaml
 
   tasks:
-  - name: Update /etc/ethers file
-    template:
-      src: templates/ethers.j2
-      dest: /etc/ethers
+  # - name: Update /etc/ethers file
+  #   template:
+  #     src: templates/ethers.j2
+  #     dest: /etc/ethers
 
   - name: Update /etc/hosts file
     template:
@@ -52,30 +52,30 @@
     import_role:
       name: ikke_t.podman_container_systemd
 
-- name: Ensure httpd container is running
-  hosts: utility
-  gather_facts: true
-  become: yes
-  vars_files:
-  - default_vars.yaml
-  vars:
-    container_state: running
-    container_name: httpd
-    container_image: "{{ httpd_image }}"
-    container_dir_data: /var/www
-    container_run_args: >-
-      --net host
-      -v "{{container_dir_data}}:{{container_dir_data}}:Z"
-      --hostname={{ ansible_fqdn }}
-  tasks:
-  - name: Ensure httpd document root exists
-    file:
-      path: "/var/www/html/ignitions"
-      state: directory
-      recurse: yes
-      mode: 0755
+# - name: Ensure httpd container is running
+#   hosts: utility
+#   gather_facts: true
+#   become: yes
+#   vars_files:
+#   - default_vars.yaml
+#   vars:
+#     container_state: running
+#     container_name: httpd
+#     container_image: "{{ httpd_image }}"
+#     container_dir_data: /var/www
+#     container_run_args: >-
+#       --net host
+#       -v "{{container_dir_data}}:{{container_dir_data}}:Z"
+#       --hostname={{ ansible_fqdn }}
+#   tasks:
+#   - name: Ensure httpd document root exists
+#     file:
+#       path: "/var/www/html/ignitions"
+#       state: directory
+#       recurse: yes
+#       mode: 0755
       
-  - name: Ensure container state
-    import_role:
-      name: ikke_t.podman_container_systemd
+#   - name: Ensure container state
+#     import_role:
+#       name: ikke_t.podman_container_systemd
 

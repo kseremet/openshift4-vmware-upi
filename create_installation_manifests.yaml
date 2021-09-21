@@ -8,7 +8,7 @@
     worker_ign_file: "{{ cluster_name }}/worker.ign"
     bootstrap_ign_file: "{{ cluster_name }}/bootstrap.ign"
     http_document_root: "/var/www/html/ignitions"
-    bootstrap_ignition_config_url: "http://{{ ansible_default_ipv4.address }}:{{ httpd_port }}/ignitions/{{ cluster_name }}_bootstrap.ign"
+    # bootstrap_ignition_config_url: "http://{{ ansible_default_ipv4.address }}:{{ httpd_port }}/ignitions/{{ cluster_name }}_bootstrap.ign"
   tasks: 
   - name: Create new cluster's directory on network utility server
     file:
@@ -59,19 +59,19 @@
   - name: Create ignition configs of new cluster
     command: openshift-install create ignition-configs --dir={{ cluster_name }}
 
-  - name: Copy bootstrap ignition file to http server
-    copy:
-      remote_src: yes
-      src: "{{ bootstrap_ign_file }}"
-      dest: "{{ http_document_root }}/{{ cluster_name }}_bootstrap.ign"
-    become: yes
+  # - name: Copy bootstrap ignition file to http server
+  #   copy:
+  #     remote_src: yes
+  #     src: "{{ bootstrap_ign_file }}"
+  #     dest: "{{ http_document_root }}/{{ cluster_name }}_bootstrap.ign"
+  #   become: yes
   
-  - name: Check that http server is serving bootstrap ignition file
-    uri:
-      url: "{{ bootstrap_ignition_config_url }}"
-      return_content: no
-      status_code: 200
-    delegate_to: localhost
+  # - name: Check that http server is serving bootstrap ignition file
+  #   uri:
+  #     url: "{{ bootstrap_ignition_config_url }}"
+  #     return_content: no
+  #     status_code: 200
+  #   delegate_to: localhost
 
   - name: Fetch the ignition files to localhost
     fetch:

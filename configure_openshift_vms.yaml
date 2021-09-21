@@ -1,27 +1,29 @@
-- name: Generate static network configuration
-  set_fact:
-    network_config: |
-      TYPE=Ethernet
-      BOOTPROTO=none
-      NAME=ens192
-      DEVICE=ens192
-      ONBOOT=yes
-      IPADDR={{ hostvars[node_name]['ansible_host'] }}
-      NETMASK={{ hostvars[network_utility_vm_name]['ansible_default_ipv4']['netmask'] }}
-      GATEWAY={{ hostvars[network_utility_vm_name]['ansible_default_ipv4']['gateway'] }}
-      DOMAIN={{ cluster_name }}.{{ domain_name }}
-      DNS1={{ network_utility_ip }}
+# - name: Generate static network configuration
+#   set_fact:
+#     network_config: |
+#       TYPE=Ethernet
+#       BOOTPROTO=none
+#       NAME=ens192
+#       DEVICE=ens192
+#       ONBOOT=yes
+#       IPADDR={{ hostvars[node_name]['ansible_host'] }}
+#       NETMASK={{ hostvars[network_utility_vm_name]['ansible_default_ipv4']['netmask'] }}
+#       GATEWAY={{ hostvars[network_utility_vm_name]['ansible_default_ipv4']['gateway'] }}
+#       DOMAIN={{ cluster_name }}.{{ domain_name }}
+#       DNS1={{ network_utility_ip }}
 
 - name: Configure vApp properties
   vmware_guest:
     validate_certs: no
     uuid: "{{ hostvars[node_name]['vmware_uuid'] }}"
     state: present
-    vapp_properties:
-      - id: "guestinfo.ignition.config.data"
-        value: "{{ lookup('template', ignition_template ) | to_nice_json(indent=2) | b64encode }}"
-      - id: "guestinfo.ignition.config.data.encoding"
-        value: base64
+    customvalues:
+    - key: "guestinfo.ignition.config.data"
+      value: "{{ ignition_data | to_nice_json(indent=2) | b64encode }}"
+    - key: "guestinfo.ignition.config.data.encoding"
+      value: base64
+    - key: "guestinfo.afterburn.initrd.network-kargs"
+      value: "ip={{ hostvars[node_name]['ansible_host'] }}::{{ network_utility_gateway }}:{{ network_utility_netmask }}:{{ node_name }}.{{ cluster_name }}.{{ domain_name }}::none nameserver={{ network_utility_ip }}"
 
 - name: Power ON VM
   vmware_guest:
